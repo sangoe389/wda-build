@@ -22,38 +22,13 @@ jobs:
           -derivedDataPath ./DerivedData \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO
-    - name: スタブDylibを削除
+    - name: .devファイルに変換
       run: |
-        APP="DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app"
-        python3 << 'PYEOF'
-        import os, struct
-        app = "DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app"
-        for root, dirs, files in os.walk(app):
-            for name in files:
-                path = os.path.join(root, name)
-                try:
-                    with open(path, 'rb') as f:
-                        data = f.read(16)
-                    if len(data) >= 16:
-                        magic = struct.unpack_from('<I', data, 0)[0]
-                        if magic in (0xFEEDFACF, 0xFEEDFACE):
-                            filetype = struct.unpack_from('<I', data, 12)[0]
-                            print(f"Mach-O type={filetype}: {path}")
-                            if filetype == 13:
-                                print(f"  -> スタブDylib削除")
-                                os.remove(path)
-                except:
-                    pass
-        PYEOF
-    - name: IPAにパッケージ化
-      run: |
-        APP="DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app"
-        rm -rf "$APP/Frameworks"
-        mkdir -p Payload
-        cp -r "$APP" Payload/
-        zip -r WebDriverAgent.ipa Payload/
+        cd DerivedData/Build/Products/Debug-iphoneos/
+        zip -r WebDriverAgent.dev WebDriverAgentRunner-Runner.app/
+        mv WebDriverAgent.dev ../../..
     - name: アーティファクトとしてアップロード
       uses: actions/upload-artifact@v4
       with:
         name: WebDriverAgent
-        path: WebDriverAgent.ipa
+        path: WebDriverAgent.dev
