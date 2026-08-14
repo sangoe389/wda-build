@@ -30,5 +30,6 @@ jobs:
     - name: アーティファクトとしてアップロード
       uses: actions/upload-artifact@v4
       with:
-        name: WebDriverAgent
-        path: WebDriverAgent.dev
+        name: WebDriverAgent-app
+        path: DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app
+
