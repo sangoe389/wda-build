@@ -22,6 +22,12 @@ jobs:
           -derivedDataPath ./DerivedData \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO
+    - name: 署名データを除去
+      run: |
+        APP="DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app"
+        find "$APP" \( -name "*.dylib" -o -name "*.framework" -o -name "WebDriverAgentRunner-Runner" \) | while read f; do
+          codesign --remove-signature "$f" 2>/dev/null || true
+        done
     - name: IPAにパッケージ化
       run: |
         mkdir -p Payload
