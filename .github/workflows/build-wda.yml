@@ -1,25 +1,18 @@
 name: Build WDA
-
 on:
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: macos-14
-
     steps:
     - name: WebDriverAgentをチェックアウト
       uses: actions/checkout@v4
       with:
         repository: appium/WebDriverAgent
-        ref: v4.18.2
-
     - name: Xcodeのバージョンを切り替え
       run: sudo xcode-select -s /Applications/Xcode_15.4.app
-
     - name: 依存関係のインストール
       run: brew install ldid xcbeautify
-
     - name: ビルド
       run: |
         xcodebuild build-for-testing \
@@ -29,7 +22,6 @@ jobs:
           -derivedDataPath ./DerivedData \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO
-
     - name: エンタイトルメントを注入
       run: |
         cat > entitlements.plist << 'EOF'
@@ -43,13 +35,11 @@ jobs:
         </plist>
         EOF
         ldid -Sentitlements.plist "DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app/WebDriverAgentRunner-Runner"
-
     - name: IPAにパッケージ化
       run: |
         mkdir -p Payload
         cp -r "DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app" Payload/
         zip -r WebDriverAgent.ipa Payload/
-
     - name: アーティファクトとしてアップロード
       uses: actions/upload-artifact@v4
       with:
