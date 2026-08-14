@@ -14,7 +14,7 @@ jobs:
         repository: appium/WebDriverAgent
 
     - name: 依存関係のインストール
-      run: brew install xcbeautify
+      run: brew install ldid xcbeautify
 
     - name: ビルド
       run: |
@@ -26,10 +26,24 @@ jobs:
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO
 
+    - name: エンタイトルメントを注入
+      run: |
+        cat > entitlements.plist << 'EOF'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>get-task-allow</key>
+            <true/>
+        </dict>
+        </plist>
+        EOF
+        ldid -Sentitlements.plist "DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app/WebDriverAgentRunner-Runner"
+
     - name: IPAにパッケージ化
       run: |
         mkdir -p Payload
-        cp -r DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app Payload/
+        cp -r "DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app" Payload/
         zip -r WebDriverAgent.ipa Payload/
 
     - name: アーティファクトとしてアップロード
