@@ -47,8 +47,10 @@ jobs:
         PYEOF
     - name: IPAにパッケージ化
       run: |
+        APP="DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app"
+        rm -rf "$APP/Frameworks"
         mkdir -p Payload
-        cp -r "DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app" Payload/
+        cp -r "$APP" Payload/
         zip -r WebDriverAgent.ipa Payload/
     - name: アーティファクトとしてアップロード
       uses: actions/upload-artifact@v4
