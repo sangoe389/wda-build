@@ -5,13 +5,16 @@ on:
 
 jobs:
   build:
-    runs-on: macos-13
+    runs-on: macos-14
 
     steps:
     - name: WebDriverAgentをチェックアウト
       uses: actions/checkout@v4
       with:
         repository: appium/WebDriverAgent
+
+    - name: Xcodeのバージョンを切り替え
+      run: sudo xcode-select -s /Applications/Xcode_15.4.app
 
     - name: 依存関係のインストール
       run: brew install ldid xcbeautify
