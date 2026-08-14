@@ -12,7 +12,7 @@ jobs:
     - name: Xcodeのバージョンを切り替え
       run: sudo xcode-select -s /Applications/Xcode_15.4.app
     - name: 依存関係のインストール
-      run: brew install ldid xcbeautify
+      run: brew install xcbeautify
     - name: ビルド
       run: |
         xcodebuild build-for-testing \
@@ -22,19 +22,6 @@ jobs:
           -derivedDataPath ./DerivedData \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO
-    - name: エンタイトルメントを注入
-      run: |
-        cat > entitlements.plist << 'EOF'
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0">
-        <dict>
-            <key>get-task-allow</key>
-            <true/>
-        </dict>
-        </plist>
-        EOF
-        ldid -Sentitlements.plist "DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app/WebDriverAgentRunner-Runner"
     - name: IPAにパッケージ化
       run: |
         mkdir -p Payload
