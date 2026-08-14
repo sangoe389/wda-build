@@ -4,6 +4,8 @@ on:
 jobs:
   build:
     runs-on: macos-14
+    env:
+      NEW_BUNDLE_PREFIX: com.i3cow.wda
     steps:
     - name: WebDriverAgentをチェックアウト
       uses: actions/checkout@v4
@@ -22,22 +24,27 @@ jobs:
           -derivedDataPath ./DerivedData \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO
+    - name: Bundle IDを書き換え
+      run: |
+        APP="DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app"
+        # 外側の .app
+        /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${NEW_BUNDLE_PREFIX}.xctrunner" "$APP/Info.plist"
+        # 内側の .xctest
+        XCTEST="$APP/PlugIns/WebDriverAgentRunner.xctest"
+        /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${NEW_BUNDLE_PREFIX}" "$XCTEST/Info.plist"
+        echo "--- Verify ---"
+        /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP/Info.plist"
+        /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$XCTEST/Info.plist"
     - name: 全ての署名情報を削除
       run: |
         APP="DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app"
-        echo "APP: $APP"
-        # .app 直下の署名を削除
         rm -rf "$APP/_CodeSignature"
         rm -f "$APP/embedded.mobileprovision"
-        # PlugIns 内の .xctest の署名も削除
         find "$APP/PlugIns" -type d -name "_CodeSignature" -exec rm -rf {} + 2>/dev/null || true
         find "$APP/PlugIns" -name "embedded.mobileprovision" -delete 2>/dev/null || true
-        # Frameworks も念のため
         if [ -d "$APP/Frameworks" ]; then
           find "$APP/Frameworks" -type d -name "_CodeSignature" -exec rm -rf {} + 2>/dev/null || true
         fi
-        echo "--- Check ---"
-        find "$APP" -name "_CodeSignature" -o -name "embedded.mobileprovision"
     - name: IPAにパッケージ化
       run: |
         mkdir -p Payload
