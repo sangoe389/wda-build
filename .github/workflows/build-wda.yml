@@ -22,14 +22,18 @@ jobs:
           -derivedDataPath ./DerivedData \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO
-    - name: .devファイルに変換
+    - name: 署名を完全に削除
       run: |
-        cd DerivedData/Build/Products/Debug-iphoneos/
-        zip -r WebDriverAgent.dev WebDriverAgentRunner-Runner.app/
-        mv WebDriverAgent.dev ../../..
+        APP="DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app"
+        codesign --remove-signature "$APP" 2>/dev/null || true
+        rm -rf "$APP/_CodeSignature"
+    - name: IPAにパッケージ化
+      run: |
+        mkdir -p Payload
+        cp -r "DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app" Payload/
+        zip -r WebDriverAgent.ipa Payload/
     - name: アーティファクトとしてアップロード
       uses: actions/upload-artifact@v4
       with:
-        name: WebDriverAgent-app
-        path: DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app
-
+        name: WebDriverAgent
+        path: WebDriverAgent.ipa
