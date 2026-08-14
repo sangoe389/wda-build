@@ -22,11 +22,27 @@ jobs:
           -derivedDataPath ./DerivedData \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO
-    - name: 署名を完全に削除
+    - name: xctestバンドルをad-hoc署名
       run: |
         APP="DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app"
-        codesign --remove-signature "$APP" 2>/dev/null || true
+        echo "APP: $APP"
+        # 既存の署名をクリア
         rm -rf "$APP/_CodeSignature"
+        find "$APP/PlugIns" -name "_CodeSignature" -type d -exec rm -rf {} + 2>/dev/null || true
+        # 内側 → 外側 の順に ad-hoc 署名
+        for XCTEST in "$APP"/PlugIns/*.xctest; do
+          BIN="$XCTEST/$(basename "$XCTEST" .xctest)"
+          echo "Signing binary: $BIN"
+          codesign --force --sign - --timestamp=none "$BIN"
+          echo "Signing bundle: $XCTEST"
+          codesign --force --sign - --timestamp=none "$XCTEST"
+        done
+        # .app 全体を再署名
+        codesign --force --sign - --timestamp=none --deep "$APP"
+        echo "--- Verify xctest ---"
+        codesign -dvv "$APP/PlugIns/WebDriverAgentRunner.xctest"
+        echo "--- Verify inner binary ---"
+        codesign -dvv "$APP/PlugIns/WebDriverAgentRunner.xctest/WebDriverAgentRunner"
     - name: IPAにパッケージ化
       run: |
         mkdir -p Payload
