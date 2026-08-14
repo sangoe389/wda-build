@@ -1,0 +1,39 @@
+name: Build WDA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: WebDriverAgentをチェックアウト
+      uses: actions/checkout@v4
+      with:
+        repository: appium/WebDriverAgent
+
+    - name: 依存関係のインストール
+      run: brew install xcbeautify
+
+    - name: ビルド
+      run: |
+        xcodebuild build-for-testing \
+          -project WebDriverAgent.xcodeproj \
+          -scheme WebDriverAgentRunner \
+          -destination "generic/platform=iOS" \
+          -derivedDataPath ./DerivedData \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO
+
+    - name: IPAにパッケージ化
+      run: |
+        mkdir -p Payload
+        cp -r DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app Payload/
+        zip -r WebDriverAgent.ipa Payload/
+
+    - name: アーティファクトとしてアップロード
+      uses: actions/upload-artifact@v4
+      with:
+        name: WebDriverAgent
+        path: WebDriverAgent.ipa
