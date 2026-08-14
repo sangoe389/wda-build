@@ -1,4 +1,4 @@
-name: Build WDA
+name: Build WDA for AltStore
 on:
   workflow_dispatch:
 jobs:
@@ -22,34 +22,29 @@ jobs:
           -derivedDataPath ./DerivedData \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO
-    - name: xctestバンドルをad-hoc署名
+    - name: 全ての署名情報を削除
       run: |
         APP="DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app"
         echo "APP: $APP"
-        # 既存の署名をクリア
+        # .app 直下の署名を削除
         rm -rf "$APP/_CodeSignature"
-        find "$APP/PlugIns" -name "_CodeSignature" -type d -exec rm -rf {} + 2>/dev/null || true
-        # 内側 → 外側 の順に ad-hoc 署名
-        for XCTEST in "$APP"/PlugIns/*.xctest; do
-          BIN="$XCTEST/$(basename "$XCTEST" .xctest)"
-          echo "Signing binary: $BIN"
-          codesign --force --sign - --timestamp=none "$BIN"
-          echo "Signing bundle: $XCTEST"
-          codesign --force --sign - --timestamp=none "$XCTEST"
-        done
-        # .app 全体を再署名
-        codesign --force --sign - --timestamp=none --deep "$APP"
-        echo "--- Verify xctest ---"
-        codesign -dvv "$APP/PlugIns/WebDriverAgentRunner.xctest"
-        echo "--- Verify inner binary ---"
-        codesign -dvv "$APP/PlugIns/WebDriverAgentRunner.xctest/WebDriverAgentRunner"
+        rm -f "$APP/embedded.mobileprovision"
+        # PlugIns 内の .xctest の署名も削除
+        find "$APP/PlugIns" -type d -name "_CodeSignature" -exec rm -rf {} + 2>/dev/null || true
+        find "$APP/PlugIns" -name "embedded.mobileprovision" -delete 2>/dev/null || true
+        # Frameworks も念のため
+        if [ -d "$APP/Frameworks" ]; then
+          find "$APP/Frameworks" -type d -name "_CodeSignature" -exec rm -rf {} + 2>/dev/null || true
+        fi
+        echo "--- Check ---"
+        find "$APP" -name "_CodeSignature" -o -name "embedded.mobileprovision"
     - name: IPAにパッケージ化
       run: |
         mkdir -p Payload
         cp -r "DerivedData/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app" Payload/
-        zip -r WebDriverAgent.ipa Payload/
+        zip -r WebDriverAgent-AltStore.ipa Payload/
     - name: アーティファクトとしてアップロード
       uses: actions/upload-artifact@v4
       with:
-        name: WebDriverAgent
-        path: WebDriverAgent.ipa
+        name: WebDriverAgent-AltStore
+        path: WebDriverAgent-AltStore.ipa
